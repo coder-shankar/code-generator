@@ -1,0 +1,5 @@
+group,Account_Type,User_Type,Reporting_Currency,Debit,Credit,Initiated_by
+L1,FBO,Platform Admin,USD,"1,000.00",,Client
+L1,USER_DEPOSIT,User,USD,,"1,000.00",Client
+L2,USER_DEPOSIT,User,USD,995,,Automated system
+L2,USER_VIRTUAL_ACCOUNT,User,USD,,995,Automated system
