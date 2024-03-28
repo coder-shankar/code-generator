@@ -22,16 +22,12 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
-import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -103,6 +99,8 @@ public class CSVProcessor extends AbstractProcessor {
                 }
 
                 final TypeElement journal = processingEnv.getElementUtils().getTypeElement("com.machnetinc.impl.JournalDto");
+                final TypeElement requestClass =
+                        processingEnv.getElementUtils().getTypeElement("com.machnetinc.impl.TransactionRequest");
 
                 final CodeBlock body = CodeBlock.builder()
                                                 .addStatement("var result = new $T<$T>()", ArrayList.class, journal.asType())
@@ -118,8 +116,7 @@ public class CSVProcessor extends AbstractProcessor {
                                              .addMethod(
                                                      MethodSpec.methodBuilder("create")
                                                                .addModifiers(Modifier.PUBLIC)
-                                                               .addParameter(ParameterSpec.builder(TransactionRequest.class,
-                                                                                                   "request").build())
+                                                               .addParameter(TypeName.get(requestClass.asType()), "request")
                                                                .addCode(body)
                                                                .addCode(builder.build())
                                                                .returns(returnType)
@@ -127,7 +124,6 @@ public class CSVProcessor extends AbstractProcessor {
                                                                .build()
                                                        )
                                              .build();
-
 
                 Filer filer = processingEnv.getFiler();
                 JavaFile javaFile =
@@ -156,61 +152,6 @@ public class CSVProcessor extends AbstractProcessor {
     @Override
     public SourceVersion getSupportedSourceVersion() {
         return SourceVersion.latestSupported();
-    }
-
-
-    private void generateJavaClassFromCSV(String csvFileName) throws IOException {
-        try {
-            final Path doesntmatter =
-                    Path.of(processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "", "doesntmatter")
-                                         .toUri())
-                        .getParent()
-                        .getParent()
-                        .getParent()
-                        .getParent()
-                        .getParent();
-            csvFileName = Path.of(doesntmatter.toString(), "src", "main", "resources", csvFileName).toString();
-
-            String className = new File(csvFileName).getName().replaceAll("\\.csv", "");
-            List<String> fields = new ArrayList<>();
-            List<String> fieldTypes = new ArrayList<>();
-            boolean headerRead = false;
-            for (String line : Files.readAllLines(Paths.get(csvFileName))) {
-                if (!headerRead) {
-                    String[] headers = line.split(",");
-                    for (String header : headers) {
-                        fields.add(header.trim());
-                        fieldTypes.add("String");
-                    }
-                    headerRead = true;
-                } else {
-
-                }
-            }
-            generateJavaClass(className, fields, fieldTypes);
-        } catch (IOException e) {
-            processingEnv.getMessager()
-                         .printMessage(Diagnostic.Kind.ERROR, "Failed to generate Java class from CSV: " + e);
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void generateJavaClass(String className, List<String> fields, List<String> fieldTypes) {
-        try {
-            JavaFileObject sourceFile = processingEnv.getFiler().createSourceFile(className);
-            try (Writer writer = sourceFile.openWriter();
-                 BufferedWriter bufferedWriter = new BufferedWriter(writer)) {
-                bufferedWriter.write("public class " + className + " {\n");
-                for (int i = 0; i < fields.size(); i++) {
-                    bufferedWriter.write("    private " + fieldTypes.get(i) + " " + fields.get(i) + ";\n");
-                    // Add getter and setter methods if needed
-                }
-                bufferedWriter.write("}");
-            }
-        } catch (IOException e) {
-            processingEnv.getMessager()
-                         .printMessage(Diagnostic.Kind.ERROR, "Failed to generate Java source file: " + e.getMessage());
-        }
     }
 
     public void error(Element e, String msg) {
