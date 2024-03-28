@@ -1,0 +1,28 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    implementation 'com.opencsv:opencsv:5.5.1'
+    annotationProcessor 'com.opencsv:opencsv:5.5.1'
+    annotationProcessor 'com.machnetinc.annotation.processor:annotationProcessor:1.0.0'
+    compileOnly 'com.machnetinc.annotation.processor:annotationProcessor:1.0.0'
+
+}
+
+compileJava {
+    options.annotationProcessorPath = configurations.annotationProcessor
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
